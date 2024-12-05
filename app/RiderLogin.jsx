@@ -1,13 +1,14 @@
-import React, { useState } from "react";
-import Icon from '@expo/vector-icons/FontAwesome6'
+import React, { useState, useEffect } from "react";
+import Icon from "@expo/vector-icons/FontAwesome6";
 import {
   View,
   Text,
   TextInput,
-  Button,
   StyleSheet,
   TouchableOpacity,
   Image,
+  BackHandler,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axiosInstance from "../utils/axiosInstance";
@@ -21,22 +22,26 @@ export default function RiderLogin() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Password Visibility Funtion
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  // Login Function
   const handleSubmit = async () => {
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post(process.env.EXPO_PUBLIC_RIDER_LOGIN, {
-        email,
-        password,
-      });
+      const response = await axiosInstance.post(
+        process.env.EXPO_PUBLIC_RIDER_LOGIN,
+        {
+          email,
+          password,
+        }
+      );
       const { token, data } = response?.data;
 
       if (token && data?._id) {
-        // Store token and id in AsyncStorage
         await AsyncStorage.setItem("token", token);
         await AsyncStorage.setItem("id", data._id);
 
@@ -58,40 +63,72 @@ export default function RiderLogin() {
         });
       }
     } catch (error) {
-      console.log(error)
+      console.log(error);
       Toast.show({
         type: "error",
         text1: error.response.data.message,
-        // text2: error.response.data.message
-        
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // App Exit Back Funtion
+  const handleBackPress = () => {
+    Alert.alert(
+      "Exit App",
+      "Are you sure you want to exit?",
+      [
+        { text: "No", style: "cancel" },
+        { text: "Yes", onPress: () => BackHandler.exitApp() },
+      ],
+      { cancelable: true }
+    );
+    return true;
+  };
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      handleBackPress
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
   return (
-    <View style={[styles.container]}>
+    <View style={styles.container}>
       <Image
-        source={require("../assets/images/login.png")} 
+        source={require("../assets/images/login.png")}
         style={styles.logo}
       />
       <Text style={styles.title}>Courier App</Text>
       <Text style={styles.subtitle}>Login to continue</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-
-      <View style={styles.passwordContainer}>
+      {/* Email Input */}
+      <View style={styles.inputContainer}>
+        <Icon
+          name="envelope"
+          size={20}
+          color="#2193b0"
+          style={styles.inputIcon}
+        />
         <TextInput
-          style={[styles.input, styles.passwordInput]}
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
+
+      {/* Password Input */}
+      <View style={styles.inputContainer}>
+        <Icon name="lock" size={20} color="#2193b0" style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
           placeholder="Password"
           value={password}
           onChangeText={setPassword}
@@ -101,10 +138,15 @@ export default function RiderLogin() {
           onPress={togglePasswordVisibility}
           style={styles.eyeIcon}
         >
-          <Text style={styles.toggleText}>{showPassword ? <Icon name="eye-slash" size={16} color={"black"}/> : <Icon name="eye" size={16} color={"black"}/>}</Text>
+          <Icon
+            name={showPassword ? "eye-slash" : "eye"}
+            size={20}
+            color="#666"
+          />
         </TouchableOpacity>
       </View>
 
+      {/* Login Button */}
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSubmit}
@@ -125,14 +167,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 16,
-    // backgroundColor: "amber",
   },
   logo: {
     width: 200,
     height: 200,
     alignSelf: "center",
     marginBottom: 20,
-    borderRadius: 20
+    borderRadius: 20,
   },
   title: {
     fontSize: 28,
@@ -146,33 +187,29 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  input: {
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingHorizontal: 10,
     marginBottom: 12,
   },
-  passwordContainer: {
-    position: "relative",
+  inputIcon: {
+    marginRight: 10,
   },
-  passwordInput: {
-    paddingRight: 80,
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 12,
   },
   eyeIcon: {
-    position: "absolute",
-    right: 16,
-    top: 15,
-  },
-  toggleText: {
-    fontSize: 14,
-    color: "#007AFF",
+    marginLeft: 10,
   },
   button: {
-    backgroundColor: "#6a0dad",
+    backgroundColor: "#2193b0",
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",

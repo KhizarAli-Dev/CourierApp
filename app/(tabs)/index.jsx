@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  Clipboard,
+  Linking,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../../utils/axiosInstance";
@@ -20,7 +22,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { Linking } from "react-native";
+import { io } from "socket.io-client";
 
 export default function Home() {
   // States
@@ -37,6 +39,66 @@ export default function Home() {
   const [dateFilter, setDateFilter] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Realtime Socket Work
+  useEffect(() => {
+    const initializeSocket = async () => {
+      const id = await AsyncStorage.getItem("id");
+
+      const socket = io(process.env.EXPO_PUBLIC_URL, {
+        query: { riderId: id },
+      });
+
+      socket.on("connect", () => {
+        console.log("Connected to socket server");
+      });
+
+      // Listen for orders status update
+      socket.on("orderUpdated", (data) => {
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === data.orderId
+              ? { ...order, status: data.status }
+              : order
+          )
+        );
+      });
+
+      socket.emit("joinRoom", id);
+      socket.on("newOrder", (newOrder) => {
+        setOrders((prevOrders) => [...prevOrders, newOrder]);
+      });
+
+      // Listen for orders status add to process
+      socket.on("ordersStatusChanged", (data) => {
+        setOrders((prevOrders) => {
+          const updatedOrdersMap = new Map(
+            [...prevOrders, ...data.orders].map((order) => [order._id, order])
+          );
+          return Array.from(updatedOrdersMap.values());
+        });
+      });
+
+      // Listen for the 'orderDeleted' event from the server
+      socket.on("orderDeleted", (data) => {
+        console.log("Order deleted:", data);
+        setOrders((prevOrders) =>
+          prevOrders.filter((order) => order._id !== data.orderId)
+        );
+      });
+
+      return () => {
+        socket.off("connect");
+        socket.off("orderUpdated");
+        socket.off("newOrder");
+        socket.off("ordersStatusChanged");
+        socket.off("orderDeleted");
+        socket.disconnect();
+      };
+    };
+
+    initializeSocket();
+  }, []);
 
   // Detail Modal Toggle Function
   const toggleDetailModal = (order = null) => {
@@ -73,22 +135,16 @@ export default function Home() {
   // Filters Logic
   useEffect(() => {
     let tempOrders = orders.filter(
-      (order) => order.status !== "delivered" && order.status !== "complete"
+      (order) =>
+        order.status !== "delivered" &&
+        order.status !== "complete" &&
+        order.status !== "Return_Receive" &&
+        order.status !== "pending"
     );
 
     if (statusFilter) {
       tempOrders = tempOrders.filter((order) => order.status === statusFilter);
     }
-
-    // if (searchTerm) {
-    //   tempOrders = tempOrders.filter((order) => {
-    //     const trackingId = order.tracking_id || order.cust_number;
-    //     return trackingId
-    //       .toString()
-    //       .toLowerCase()
-    //       .includes(searchTerm.toLowerCase());
-    //   });
-    // }
 
     if (searchTerm) {
       tempOrders = tempOrders.filter((order) => {
@@ -150,7 +206,6 @@ export default function Home() {
         updatedOrderData
       );
       if (response.data.success) {
-        alert("Order Updated Successfully");
         setOrders((prevOrders) =>
           prevOrders.map((order) =>
             order._id === selectedOrder._id
@@ -166,12 +221,14 @@ export default function Home() {
     }
   };
 
+  // Clear Filters
   const clearFilter = () => {
     setStatusFilter("");
     setSearchTerm("");
     setDateFilter("");
   };
 
+  // Refreshing
   const onRefresh = () => {
     getRidersOrder();
   };
@@ -184,25 +241,8 @@ export default function Home() {
         }
       >
         <WelcomeCard searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-        <ScrollView style={styles.container}>
-          {/* Date Picker */}
+        <View style={styles.container}>
           <View>
-            {/* <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
-              style={{
-                backgroundColor: "#203A43",
-                paddingVertical: 12,
-                paddingHorizontal: 20,
-                borderRadius: 8,
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 16 }}>
-                {dateFilter && dateFilter !== ""
-                  ? `Date : ${dateFilter}`
-                  : "Select Date"}
-              </Text>
-            </TouchableOpacity> */}
             {showDatePicker && (
               <DateTimePicker
                 value={dateFilter ? new Date(dateFilter) : new Date()}
@@ -218,7 +258,6 @@ export default function Home() {
               />
             )}
           </View>
-
           {/* Status Picker */}
           <View
             style={{
@@ -240,7 +279,6 @@ export default function Home() {
               <Picker.Item label="Canceled" value="canceled" />
               <Picker.Item label="In Process" value="inprocess" />
             </Picker>
-
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
               style={{
@@ -255,14 +293,12 @@ export default function Home() {
                 <AntDesign name="calendar" size={16} />
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity onPress={clearFilter} style={styles.clearButton}>
               <Text style={{ color: "white" }}>Clear</Text>
             </TouchableOpacity>
           </View>
 
           {/* Fetch Orders */}
-
           {filteredOrders.length > 0 ? (
             filteredOrders.map((order) => {
               const buttonStyle =
@@ -296,8 +332,6 @@ export default function Home() {
                         padding: 4,
                         borderBottomWidth: 0.3,
                         marginBottom: 10,
-
-                        // backgroundColor:"purple"
                       }}
                     >
                       <View>
@@ -315,18 +349,6 @@ export default function Home() {
                       </View>
                     </View>
 
-                    {/* <Text style={styles.trackingTitle}>
-                      <Text
-                        style={{
-                          color: "#0F2027",
-                          textDecorationLine: "underline",
-                          fontWeight: "500",
-                        }}
-                      >
-                        Tracking #
-                      </Text>{" "}
-                      {order.tracking_id || "Tacking Id"}
-                    </Text> */}
                     <Text style={styles.orderTitle}>
                       <Ionicons name="person" size={16} />
                       {" : "}
@@ -339,21 +361,22 @@ export default function Home() {
                       <Text
                         style={{ color: "white" }}
                         onPress={() => {
-                          const whatsappNumber = order.cust_number;
+                          let whatsappNumber = order.cust_number;
+
+                          if (whatsappNumber.startsWith("03")) {
+                            whatsappNumber = "+92" + whatsappNumber.slice(1);
+                          }
+
                           Linking.openURL(`https://wa.me/${whatsappNumber}`);
+                        }}
+                        onLongPress={() => {
+                          Clipboard.setString(order.cust_number);
                         }}
                       >
                         {order.cust_number}
                       </Text>
                     </Text>
 
-                    {/*
-                    <Text style={styles.orderDetail}>
-                      <Ionicons name="call" size={16} />
-                      {" : "}
-                      {order.cust_number}
-                    </Text>
-                     */}
                     <Text style={styles.orderDetail}>
                       <Ionicons name="location-sharp" size={16} />
                       {" : "}
@@ -364,15 +387,24 @@ export default function Home() {
                       {": "}
                       {`Rs. ${order.amount}`}
                     </Text>
+
                     <View style={styles.statusContainer}>
                       <Text style={styles.orderDetail}>Status:</Text>
-                      <TouchableOpacity
-                        onPress={() => toggleStatusModal(order)}
-                      >
-                        <Text style={[styles.statusButton, buttonStyle]}>
-                          {order.status}
-                        </Text>
-                      </TouchableOpacity>
+                      {order.status === "pending" ? (
+                        <TouchableOpacity>
+                          <Text style={[styles.statusButton, buttonStyle]}>
+                            {order.status}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => toggleStatusModal(order)}
+                        >
+                          <Text style={[styles.statusButton, buttonStyle]}>
+                            {order.status}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 </LinearGradient>
@@ -381,7 +413,6 @@ export default function Home() {
           ) : (
             <Text>No orders found</Text>
           )}
-
           {/* Detail Modal */}
           <Modal
             isVisible={isDetailModalVisible}
@@ -389,6 +420,8 @@ export default function Home() {
             animationOut={"bounceOutDown"}
             animationOutTiming={1000}
             animationInTiming={1000}
+            onBackButtonPress={toggleDetailModal}
+            onBackdropPress={toggleDetailModal}
           >
             <View style={styles.modalContainer}>
               <View style={styles.modalTableContent}>
@@ -483,6 +516,8 @@ export default function Home() {
             animationOut={"bounceOutDown"}
             animationOutTiming={1000}
             animationInTiming={1000}
+            onBackButtonPress={toggleStatusModal}
+            onBackdropPress={toggleStatusModal}
           >
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -530,7 +565,7 @@ export default function Home() {
               </View>
             </View>
           </Modal>
-        </ScrollView>
+        </View>
       </ScrollView>
     </>
   );
@@ -538,7 +573,6 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 10, backgroundColor: "#FAF9F6" },
-
   card: {
     borderRadius: 15,
     padding: 8,

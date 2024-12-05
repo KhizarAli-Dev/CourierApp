@@ -1,24 +1,23 @@
 import { Tabs, useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { NavigationContainer } from "@react-navigation/native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { StyleSheet, View, Text, useColorScheme } from "react-native";
+import { StyleSheet, View, useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect } from "react";
+import { NavigationContainer } from "@react-navigation/native";
 
 export default function TabLayout() {
   const route = useRouter();
-
   const theme = useColorScheme();
 
   useEffect(() => {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
-        route.push("/");
+        route.push("/"); // Redirect to the home page
       } else {
-        route.push("/RiderLogin");
+        route.push("/RiderLogin"); // Redirect to login
       }
     };
 
@@ -31,8 +30,9 @@ export default function TabLayout() {
         backgroundColor={theme === "dark" ? "#203A43" : "#203A43"} // Set background color based on theme
         style={theme === "dark" ? "light" : "light"} // Set text color based on theme
       />
+
       <NavigationContainer>
-        <Tabs
+        {/* <Tabs
           screenOptions={{
             tabBarActiveTintColor: "#2193b0",
             tabBarInactiveTintColor: "#8e8e93",
@@ -78,6 +78,7 @@ export default function TabLayout() {
               ),
             }}
           />
+
           <Tabs.Screen
             name="Profile"
             options={{
@@ -94,6 +95,93 @@ export default function TabLayout() {
                   />
                 </View>
               ),
+            }}
+          />
+          <Tabs.Screen
+            name="Pending"
+            options={{
+              title: "Pending",
+              headerShown: false,
+              tabBarButton: () => null,
+
+            }}
+          />
+        </Tabs> */}
+
+        <Tabs
+          screenOptions={({ route }) => ({
+            tabBarActiveTintColor: "#2193b0",
+            tabBarInactiveTintColor: "#8e8e93",
+            tabBarStyle: styles.tabBar,
+            tabBarLabelStyle: styles.tabLabel,
+            tabBarItemStyle: styles.tabItem,
+          })}
+        >
+          <Tabs.Screen
+            name="Delivered"
+            options={{
+              headerShown: false,
+              title: "History",
+              tabBarIcon: ({ color, focused }) => (
+                <View
+                  style={[styles.iconContainer, focused && styles.iconActive]}
+                >
+                  <MaterialCommunityIcons
+                    name="history"
+                    color={focused ? "#fff" : color}
+                    size={25}
+                  />
+                </View>
+              ),
+            }}
+          />
+
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: "Home",
+              headerShown: false,
+              tabBarIcon: ({ color, focused }) => (
+                <View
+                  style={[styles.iconContainer, focused && styles.iconActive]}
+                >
+                  <Ionicons
+                    name={focused ? "home-sharp" : "home-outline"}
+                    color={focused ? "#fff" : color}
+                    size={25}
+                  />
+                </View>
+              ),
+            }}
+          />
+
+          <Tabs.Screen
+            name="Profile"
+            options={{
+              title: "Profile",
+              headerShown: false,
+              tabBarIcon: ({ color, focused }) => (
+                <View
+                  style={[styles.iconContainer, focused && styles.iconActive]}
+                >
+                  <Ionicons
+                    name={focused ? "person-sharp" : "person-outline"}
+                    color={focused ? "#fff" : color}
+                    size={25}
+                  />
+                </View>
+              ),
+            }}
+          />
+
+          <Tabs.Screen
+            name="Pending"
+            options={{
+              title: "Pending",
+              headerShown: false,
+              tabBarItemStyle: {
+                display: "none",
+              },
             }}
           />
         </Tabs>

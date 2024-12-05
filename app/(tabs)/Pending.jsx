@@ -13,15 +13,14 @@ import axiosInstance from "../../utils/axiosInstance";
 import { LinearGradient } from "expo-linear-gradient";
 import { TouchableOpacity } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { AntDesign, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Linking } from "react-native";
 import Icon from "@expo/vector-icons/Feather";
 import Modal from "react-native-modal";
 import Close from "@expo/vector-icons/EvilIcons";
-import { Picker } from "@react-native-picker/picker";
 import { io } from "socket.io-client";
 
-function Delivered() {
+function Pending() {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [dateFilter, setDateFilter] = useState("");
@@ -29,7 +28,6 @@ function Delivered() {
   const [refreshing, setRefreshing] = useState(false);
   const [isDetailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     const initializeSocket = async () => {
@@ -53,18 +51,22 @@ function Delivered() {
         );
       });
 
-      socket.emit("joinRoom", id);
-
       // Listen for the 'orderDeleted' event from the server
       socket.on("orderDeleted", (data) => {
+        console.log("Order deleted:", data);
         setOrders((prevOrders) =>
           prevOrders.filter((order) => order._id !== data.orderId)
         );
       });
 
+      socket.emit("joinRoom", id);
+      socket.on("newOrder", (newOrder) => {
+        setOrders((prevOrders) => [...prevOrders, newOrder]);
+      });
+
       return () => {
         socket.off("connect");
-
+        socket.off("newOrder");
         socket.off("orderUpdated");
         socket.off("orderDeleted");
         socket.disconnect();
@@ -98,12 +100,8 @@ function Delivered() {
         process.env.EXPO_PUBLIC_RIDER_SPECIFIC
       );
       const filteredOrders =
-        response?.data?.data?.filter(
-          (order) =>
-            order.status === "delivered" ||
-            order.status === "complete" ||
-            order.status === "Return_Receive"
-        ) || [];
+        response?.data?.data?.filter((order) => order.status === "pending") ||
+        [];
       setOrders(filteredOrders);
     } catch (error) {
       console.error("Error in Fetching Orders", error);
@@ -122,12 +120,8 @@ function Delivered() {
       );
     }
 
-    if (statusFilter) {
-      tempOrders = tempOrders.filter((order) => order.status === statusFilter);
-    }
-
     setFilteredOrders(tempOrders);
-  }, [orders, dateFilter, statusFilter]);
+  }, [orders, dateFilter]);
 
   // Date Handle Change Function
   const handleDateChange = (event, selectedDate) => {
@@ -139,7 +133,6 @@ function Delivered() {
 
   const clearFilter = () => {
     setDateFilter("");
-    setStatusFilter("");
   };
 
   const onRefresh = () => {
@@ -156,7 +149,7 @@ function Delivered() {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.ordersTitle}>Orders History</Text>
+          <Text style={styles.ordersTitle}>Pending Orders</Text>
         </View>
 
         {/* Filters & Pickers */}
@@ -183,17 +176,6 @@ function Delivered() {
             width: "100%",
           }}
         >
-          <Picker
-            selectedValue={statusFilter}
-            onValueChange={(value) => setStatusFilter(value)}
-            style={styles.statusPicker}
-          >
-            <Picker.Item label="Statuses" value="" />
-            <Picker.Item label="Delivered" value="delivered" />
-            <Picker.Item label="Completed" value="complete" />
-            <Picker.Item label="Return Receive" value="Return_Receive" />
-          </Picker>
-
           <TouchableOpacity
             onPress={() => setShowDatePicker(true)}
             style={{
@@ -202,10 +184,12 @@ function Delivered() {
               paddingHorizontal: 16,
               borderRadius: 8,
               alignItems: "center",
+              width: "70%",
             }}
           >
             <Text style={{ color: "white" }}>
-              <AntDesign name="calendar" size={16} />
+              {/* <AntDesign name="calendar" size={16} /> */}
+              {dateFilter ? "Selected Date: " + dateFilter : "Select Your Date"}
             </Text>
           </TouchableOpacity>
 
@@ -248,6 +232,7 @@ function Delivered() {
                     </TouchableOpacity>
                   </View>
                 </View>
+
                 <Text style={styles.orderDetail}>
                   <Ionicons name="person" size={16} />
                   {" : "}
@@ -290,19 +275,13 @@ function Delivered() {
                   {": "}
                   {`Rs. ${order.amount}`}
                 </Text>
+
                 <View
                   style={[
                     styles.statusBadge,
                     {
                       backgroundColor:
-                        order.status === "delivered"
-                          ? "#52c234"
-                          : order.status === "complete"
-                          ? "#000"
-                          : order.status === "Return_Receive"
-                          ? "#f97316"
-                          : "#d1d5db",
-                      width: order.status === "Return_Receive" ? 120 : 80,
+                        order.status === "pending" ? "#fbd100" : "#d1d5db",
                     },
                   ]}
                 >
@@ -315,7 +294,7 @@ function Delivered() {
           <View
             style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
           >
-            <Text>No Delivered & Completed Orders Found</Text>
+            <Text>No Pending Orders Found</Text>
           </View>
         )}
 
@@ -420,7 +399,7 @@ function Delivered() {
   );
 }
 
-export default Delivered;
+export default Pending;
 
 const styles = StyleSheet.create({
   container: {
@@ -465,7 +444,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    color: "white",
+    color: "black",
   },
   statusPicker: {
     flex: 1,

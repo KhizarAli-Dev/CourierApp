@@ -83,7 +83,7 @@ export default function Profile() {
               <View style={styles.infoContainer}>
                 {/* Account Info Section */}
                 <LinearGradient
-                  colors={["#C04848", "#480048"]}
+                  colors={["#0F2027", "#2C5364"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.card}
@@ -105,7 +105,7 @@ export default function Profile() {
 
                 {/* Contact Details Section */}
                 <LinearGradient
-                  colors={["#C04848", "#480048"]}
+                  colors={["#0F2027", "#2C5364"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.card}
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 16,
   },
   profileImage: {
     width: 150,
@@ -213,9 +213,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   logoutButton: {
-    backgroundColor: "#ff4d4d",
+    backgroundColor: "#6f0000",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     marginTop: 20,
   },
