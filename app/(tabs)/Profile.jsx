@@ -2,27 +2,27 @@ import {
   StyleSheet,
   Text,
   View,
-  Image,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
-  useColorScheme,
+  Image,
+  ActivityIndicator,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import axiosInstance from "../../utils/axiosInstance";
 import { LinearGradient } from "expo-linear-gradient";
-import { StatusBar } from "expo-status-bar";
+import Modal from 'react-native-modal'
 
 export default function Profile() {
   const route = useRouter();
   const [rider, setRider] = useState(null);
   const [id, setId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
-
-
+  // Get Rider Id
   useEffect(() => {
     const fetchId = async () => {
       const storedId = await AsyncStorage.getItem("id");
@@ -37,6 +37,7 @@ export default function Profile() {
     }
   }, [id]);
 
+  // Rider Details Funtion
   const getRiderDetails = async () => {
     try {
       const RIDER_DETAILS = `${process.env.EXPO_PUBLIC_PROFILE_URL}${id}`;
@@ -47,6 +48,7 @@ export default function Profile() {
     }
   };
 
+  // Logout Funtion
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("token");
@@ -57,13 +59,22 @@ export default function Profile() {
     }
   };
 
+  // Swipe Refresh Funtion
   const onRefresh = () => {
     getRiderDetails();
   };
 
+  // Toggle modal visibility
+  const openModal = () => {
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
   return (
     <>
-
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -72,13 +83,24 @@ export default function Profile() {
         <View style={styles.container}>
           {rider ? (
             <>
-              <View style={styles.profileHeader}>
-                <Image
-                  source={{ uri: rider.image.url }}
-                  style={styles.profileImage}
-                />
-                <Text style={styles.name}>{rider.name}</Text>
-              </View>
+              <LinearGradient
+                colors={["#16222A", "#3A6073"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.profileGradient}
+              >
+                <View style={styles.profileHeader}>
+                  {rider?.image?.url && (
+                    <TouchableOpacity onPress={openModal}>
+                      <Image
+                        source={{ uri: rider.image.url }}
+                        style={styles.profileImage}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  <Text style={styles.name}>{rider.name}</Text>
+                </View>
+              </LinearGradient>
 
               <View style={styles.infoContainer}>
                 {/* Account Info Section */}
@@ -135,10 +157,36 @@ export default function Profile() {
               </View>
             </>
           ) : (
-            <Text style={styles.loadingText}>Loading...</Text>
+            <View>
+              <ActivityIndicator size="large" color="2193b0" />
+            </View>
           )}
         </View>
       </ScrollView>
+
+      {/* Modal for Enlarged Profile Image */}
+      <Modal
+        isVisible={modalVisible}
+        animationIn={"zoomIn"}
+        animationOut={"zoomOut"}
+        animationOutTiming={500}
+        animationInTiming={500}
+        onBackdropPress={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+           {/* Check if image exists before rendering */}
+           {rider?.image?.url && (
+              <TouchableOpacity onPress={closeModal}>
+                <Image
+                  source={{ uri: rider.image.url }}
+                  style={styles.enlargedImage}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -147,35 +195,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f7fa",
-    padding: 20,
-    // marginTop: 35,
   },
   profileHeader: {
     alignItems: "center",
     marginBottom: 16,
+    padding: 20,
+  },
+  profileGradient: {
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
   },
   profileImage: {
     width: 150,
     height: 150,
     borderRadius: 100,
-    marginBottom: 15,
+    marginBottom: 10,
     borderWidth: 3,
-    borderColor: "#023e8a",
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   name: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#023e8a",
+    color: "white",
   },
   infoContainer: {
     flex: 1,
-    marginTop: 12,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    
   },
   card: {
-    // backgroundColor: "#023e8a",
     borderRadius: 15,
     padding: 18,
-    marginVertical: 10,
+    marginVertical: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -223,5 +275,20 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    
+  },
+  enlargedImage: {
+    width: 300,
+    height: 300,
+    borderRadius: 20,
   },
 });

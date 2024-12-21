@@ -64,7 +64,6 @@ function Delivered() {
 
       return () => {
         socket.off("connect");
-
         socket.off("orderUpdated");
         socket.off("orderDeleted");
         socket.disconnect();
