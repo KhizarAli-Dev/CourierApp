@@ -14,7 +14,8 @@ import EvilIcons from "@expo/vector-icons/EvilIcons";
 import Feather from "@expo/vector-icons/Feather";
 import Entypo from "@expo/vector-icons/Entypo";
 import { Link, useRouter } from "expo-router";
-import io from "socket.io-client"; // Ensure you import socket.io-client
+import io from "socket.io-client";
+import AntDesign from "@expo/vector-icons/AntDesign";
 
 function WelcomeCard({ searchTerm, setSearchTerm }) {
   const [rider, setRider] = useState(null);
@@ -152,6 +153,10 @@ function WelcomeCard({ searchTerm, setSearchTerm }) {
     router.push("/Pending");
   };
 
+  const orderScanNavigate = () => {
+    router.push("/OrderScan");
+  };
+
   return (
     <View style={styles.cardContainer}>
       <LinearGradient
@@ -161,7 +166,7 @@ function WelcomeCard({ searchTerm, setSearchTerm }) {
         end={{ x: 1, y: 0 }}
       >
         {/* Search Bar */}
-        <View>
+        {/* <View>
           <TextInput
             style={styles.searchBar}
             placeholder="Search..."
@@ -175,6 +180,32 @@ function WelcomeCard({ searchTerm, setSearchTerm }) {
             size={20}
             style={styles.searchIcon}
           />
+          <TouchableOpacity onPress={orderScanNavigate}>
+            <Link style={styles.statusTitle} href="/OrderScan">
+            <AntDesign name="scan1" size={25}/>
+            </Link>
+          </TouchableOpacity>
+        </View> */}
+
+        <View style={styles.container}>
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Search..."
+            placeholderTextColor="#ccc"
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+          />
+          <Icon
+            name="search-outline"
+            color={"white"}
+            size={20}
+            style={styles.searchIcon}
+          />
+          <TouchableOpacity onPress={orderScanNavigate}>
+            <Link style={styles.scannerIcon} href="/OrderScan">
+              <AntDesign name="scan1" size={25} color="white" />
+            </Link>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.greetingText}>
@@ -240,6 +271,7 @@ function WelcomeCard({ searchTerm, setSearchTerm }) {
             </View>
           </View>
         </View>
+        {/* Order Scan */}
       </LinearGradient>
     </View>
   );
@@ -270,17 +302,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingBottom: 80,
   },
-  searchBar: {
-    backgroundColor: "transparent",
-    borderColor: "white",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    color: "white",
-    marginTop: 50,
-    height: 40,
-  },
+  // searchBar: {
+  //   backgroundColor: "transparent",
+  //   borderColor: "white",
+  //   borderWidth: 1,
+  //   borderRadius: 10,
+  //   paddingHorizontal: 15,
+  //   marginBottom: 15,
+  //   color: "white",
+  //   marginTop: 50,
+  //   height: 40,
+  // },
   greetingText: {
     fontSize: 24,
     fontWeight: "bold",
@@ -302,11 +334,11 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
   },
-  searchIcon: {
-    position: "absolute",
-    top: 60,
-    right: 8,
-  },
+  // searchIcon: {
+  //   position: "absolute",
+  //   top: 60,
+  //   right: 8,
+  // },
   counterContainer: {
     flexDirection: "column",
     justifyContent: "space-evenly",
@@ -336,5 +368,31 @@ const styles = StyleSheet.create({
     color: "white",
     marginLeft: 6,
     marginBottom: 5,
+  },
+
+
+  container: {
+    flexDirection: "row", // Align items in a row
+    alignItems: "center", // Vertically center items
+    backgroundColor: "transparent",
+    height: 40,
+    marginTop: 50,
+    marginBottom: 15,
+  },
+  searchBar: {
+    flex: 1, // Take available space
+    color: "white",
+    paddingHorizontal: 10,
+    fontSize: 16,
+    borderColor: "white",
+    borderWidth: 1,
+    borderRadius: 10,
+
+  },
+  searchIcon: {
+    marginLeft: 10, // Space between input and search icon
+  },
+  scannerIcon: {
+    marginLeft: 10, // Space between search icon and scanner icon
   },
 });

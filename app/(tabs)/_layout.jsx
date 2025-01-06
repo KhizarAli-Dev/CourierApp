@@ -108,6 +108,17 @@ export default function TabLayout() {
               },
             }}
           />
+
+          <Tabs.Screen
+            name="OrderScan"
+            options={{
+              title: "OrderScan",
+              headerShown: false,
+              tabBarItemStyle: {
+                display: "none",
+              },
+            }}
+          />
         </Tabs>
       </NavigationContainer>
     </>

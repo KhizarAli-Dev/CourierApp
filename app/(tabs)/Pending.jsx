@@ -362,12 +362,6 @@ function Pending() {
                       </Text>
                     </View>
                     <View style={styles.tableRow}>
-                      <Text style={styles.tableLabel}>Delivery Charges:</Text>
-                      <Text style={styles.tableValue}>
-                        {selectedOrder.delivery_charges}
-                      </Text>
-                    </View>
-                    <View style={styles.tableRow}>
                       <Text style={styles.tableLabel}>Feedback:</Text>
                       <Text style={styles.tableValue}>
                         {!selectedOrder.feedback
